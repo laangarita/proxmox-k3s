@@ -1,0 +1,40 @@
+---
+
+# This playbook deploys the K3s environment on a cluster with 3 master, worker, etcd nodes.
+
+- name: Set up infrastructure
+  hosts: localhost
+  connection: local
+  become: True
+  gather_facts: False
+
+  roles:
+    - role: provision_k3s_nodes
+      tags: [ 'deploy', 'tf_create' ]
+
+
+- name: Verify Inventory
+  hosts: all
+  gather_facts: no
+
+  tasks:
+
+  - name: Show contents of adds to the hosts file
+    debug:
+      msg: "{{ ansible_host }}     {{ inventory_hostname }}.{{ HOST_DOMAIN }}    {{ inventory_hostname }}"
+    register: etc_hosts
+    tags:
+      - names
+
+
+- name: Prepare K3S Nodes
+  hosts: master_nodes:worker_nodes:etcd_nodes
+  remote_user: centos
+  connection: ssh
+  gather_facts: True
+
+  roles:
+    - role: deploy_k3s_nodes
+      tags: [ 'deploy', 'tf_nodes' ]
+      become: True
+
